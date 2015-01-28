@@ -134,3 +134,52 @@ nginx安装路径假设为:/usr/local/nginx/conf/
 </table>
 	
 感谢ngx_lua模块的开发者[@agentzh](https://github.com/agentzh/),春哥是我所接触过开源精神最好的人
+
+基于ngx_lua的web应用防火墙部署脚本
+
+mkdir -p /usr/local/src
+cd /usr/local/src
+if [ ! -x "LuaJIT-2.0.0.tar.gz" ]; then 
+wget http://luajit.org/download/LuaJIT-2.0.0.tar.gz
+fi
+tar zxvf LuaJIT-2.0.0.tar.gz
+cd LuaJIT-2.0.0
+make
+make install PREFIX=/usr/local/lj2
+ln -s /usr/local/lj2/lib/libluajit-5.1.so.2 /lib64/
+cd /usr/local/src
+if [ ! -x "v0.2.19.zip" ]; then 
+wget https://github.com/simpl/ngx_devel_kit/archive/v0.2.19.zip
+fi
+unzip v0.2.19
+if [ ! -x "v0.9.14" ]; then 
+wget https://github.com/openresty/lua-nginx-module/archive/v0.9.14.zip
+fi
+unzip v0.9.14
+cd /usr/local/src
+if [ ! -x "pcre-8.10.tar.gz" ]; then
+wget http://blog.s135.com/soft/linux/nginx_php/pcre/pcre-8.10.tar.gz
+fi
+tar zxvf pcre-8.10.tar.gz
+cd pcre-8.10/
+yum install gcc+ gcc-c++ -y
+./configure --disable-shared --with-pic 
+make && make install
+cd ..
+if [ ! -x "nginx-1.6.0.tar.gz" ]; then
+wget 'http://nginx.org/download/nginx-1.6.0.tar.gz'
+fi
+tar -xzvf nginx-1.6.0.tar.gz
+cd nginx-1.6.0/
+export LUAJIT_LIB=/usr/local/lj2/lib/
+export LUAJIT_INC=/usr/local/lj2/include/luajit-2.0/
+yum -y install gzip-devel openssl-devel  
+./configure --user=daemon --group=daemon --prefix=/usr/local/nginx/ --with-http_stub_status_module --with-http_sub_module --with-http_gzip_static_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module  --add-module=../ngx_devel_kit-0.2.19/ --add-module=../lua-nginx-module-0.9.14/
+make -j8
+make install
+#rm -rf /usr/local/src
+cd /usr/local/nginx/conf/
+wget https://github.com/loveshell/ngx_lua_waf/archive/master.zip --no-check-certificate
+unzip master.zip
+mv ngx_lua_waf-master/* /usr/local/nginx/conf/
+
